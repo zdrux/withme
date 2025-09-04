@@ -1,0 +1,32 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata: { name: daily-event }
+spec:
+  schedule: "0 * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+            - name: sweeper
+              image: ghcr.io/withme/cron:0.1.0
+              command: ["python","-m","cron.daily_event"]
+              envFrom: [ { secretRef: { name: withme-secrets } } ]
+          restartPolicy: OnFailure
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata: { name: semantic-refresh }
+spec:
+  schedule: "30 2 * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+            - name: refresher
+              image: ghcr.io/withme/cron:0.1.0
+              command: ["python","-m","cron.semantic_refresh"]
+              envFrom: [ { secretRef: { name: withme-secrets } } ]
+          restartPolicy: OnFailure
+

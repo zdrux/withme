@@ -1,0 +1,15 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: worker, labels: { app: withme } }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: withme, tier: worker } }
+  template:
+    metadata: { labels: { app: withme, tier: worker } }
+    spec:
+      containers:
+        - name: worker
+          image: ghcr.io/withme/worker:0.1.0
+          command: ["python","-m","worker.run"]
+          envFrom: [ { secretRef: { name: withme-secrets } } ]
+
