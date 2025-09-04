@@ -5,6 +5,8 @@ from pydantic import BaseModel
 from ..security import get_current_user
 from ..db import session_scope
 from .. import crud
+from ..jobs import get_queue
+from ..models import ImageJob
 
 
 router = APIRouter()
@@ -33,6 +35,16 @@ class RequestImageReq(BaseModel):
 
 @router.post("/request_image")
 async def request_image(req: RequestImageReq, user=Depends(get_current_user)):
-    # TODO: enqueue image generation job and persist job id
-    _ = (req, user)
-    return {"job_id": "00000000-0000-0000-0000-00000000F00D", "status": "queued"}
+    user_id = uuid.UUID(str(user["id"]))
+    async with session_scope() as session:
+        db_user = await crud.get_or_create_user(session, user_id=user_id, email=user.get("email", "dev@example.com"))
+        agent = await crud.get_or_create_agent(session, db_user)
+        # Create queued job record
+        job_row = ImageJob(agent_id=agent.id, prompt=req.prompt, status="queued")
+        session.add(job_row)
+        await session.flush()
+        job_id = str(job_row.id)
+    # Enqueue background processing (string path so API image need not import worker code)
+    q = get_queue()
+    rq_job = q.enqueue("worker.tasks.process_image_job", job_id)
+    return {"job_id": job_id, "status": "queued", "rq_id": rq_job.id}

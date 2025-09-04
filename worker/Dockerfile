@@ -14,6 +14,6 @@ COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY worker ./worker
+COPY api/withme ./api/withme
 
 CMD ["python", "-m", "worker.run"]
-

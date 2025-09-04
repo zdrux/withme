@@ -10,6 +10,7 @@ from .withme.routes.chat import router as chat_router
 from .withme.routes.webhooks import router as webhooks_router
 from .withme.routes.admin import router as admin_router
 from .withme.routes.cron import router as cron_router
+from .withme.routes.messages import router as messages_router
 
 
 def create_app() -> FastAPI:
@@ -32,6 +33,7 @@ def create_app() -> FastAPI:
     app.include_router(webhooks_router, prefix="/webhooks", tags=["webhooks"])
     app.include_router(admin_router, prefix="/admin", tags=["admin"])
     app.include_router(cron_router, prefix="/cron", tags=["cron"])
+    app.include_router(messages_router, tags=["messages"])
 
     # Static web test UI (optional)
     try:
