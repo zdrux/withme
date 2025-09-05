@@ -1,5 +1,5 @@
 from functools import lru_cache
-from pydantic import AnyUrl, AliasChoices, Field
+from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -13,8 +13,8 @@ class Settings(BaseSettings):
     # External services
     openai_api_key: str | None = None
     pinecone_api_key: str | None = None
-    supabase_url: AnyUrl | None = None
-    supabase_project_url: AnyUrl | None = None
+    supabase_url: str | None = None
+    supabase_project_url: str | None = None
     supabase_jwt_secret: str | None = Field(default=None, validation_alias=AliasChoices("SUPABASE_JWT_SECRET", "SUPABASE_JWT_TOKEN"))
     supabase_anon_key: str | None = None
     supabase_service_role_key: str | None = None

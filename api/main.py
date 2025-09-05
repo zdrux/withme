@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import RedirectResponse
 
 from .withme.routes.health import router as health_router
 from .withme.routes.device import router as device_router
@@ -38,6 +39,9 @@ def create_app() -> FastAPI:
     # Static web test UI (optional)
     try:
         app.mount("/web", StaticFiles(directory="web", html=True), name="web")
+        @app.get("/")
+        async def root_redirect():
+            return RedirectResponse(url="/web/")
     except Exception:
         # Web folder may not exist yet in early scaffolding.
         pass

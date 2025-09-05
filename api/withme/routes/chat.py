@@ -9,6 +9,7 @@ from ..jobs import get_queue
 from ..models import ImageJob
 from ..services.context import build_context
 from ..providers.openai_client import OpenAIProvider
+from ..services.mood_affinity import apply_mood_microdelta, apply_affinity_delta
 
 
 router = APIRouter()
@@ -54,6 +55,9 @@ async def send_chat(req: SendChatReq, user=Depends(get_current_user)):
             else:
                 reply_text = "Catching my breath—what’s on your mind?"
         agent_msg = await crud.create_message(session, user_id=db_user.id, agent_id=agent.id, role="agent", text=reply_text)
+        # Heuristic mood + affinity updates
+        await apply_mood_microdelta(session, agent, req.text)
+        await apply_affinity_delta(session, agent, req.text, reply_text)
     return {"message_id": str(user_msg.id), "reply": {"text": reply_text, "id": str(agent_msg.id)}}
 
 

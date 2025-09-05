@@ -3,51 +3,36 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>With Me — Test UI</title>
-    <style>
-      body { font: 14px/1.4 system-ui, sans-serif; margin: 2rem; }
-      input, button { font: inherit; padding: 0.5rem; }
-      .row { margin: 0.5rem 0; }
-      pre { background: #f5f5f5; padding: 1rem; border-radius: 8px; }
-    </style>
+    <title>With Me — Chat</title>
+    <link rel="stylesheet" href="/web/styles.css" />
   </head>
   <body>
-    <h1>With Me — Test UI</h1>
-    <div class="row">
-      <label>Bearer Token: <input id="token" size="64" placeholder="dev token" /></label>
+    <div class="app">
+      <header class="topbar">
+        <div class="brand">With Me</div>
+        <div class="agent" id="agentHeader">Loading agent…</div>
+        <div class="auth">
+          <input id="token" placeholder="Bearer token (dev for local)" />
+          <button id="saveToken">Save</button>
+        </div>
+      </header>
+
+      <main class="chat">
+        <div class="history" id="history"></div>
+        <button id="loadMore" class="load-more">Load earlier</button>
+      </main>
+
+      <footer class="composer">
+        <div class="row">
+          <input id="message" placeholder="Type a message…" />
+          <button id="send">Send</button>
+        </div>
+        <div class="row">
+          <input id="imgPrompt" placeholder="Optional: request an image (prompt)" />
+          <button id="requestImg">Request Image</button>
+        </div>
+      </footer>
     </div>
-    <div class="row">
-      <button id="btn-health">GET /health</button>
-      <button id="btn-state">GET /state</button>
-      <button id="btn-agent">GET /agent</button>
-    </div>
-    <div class="row">
-      <input id="msg" size="60" placeholder="Type a message" />
-      <button id="btn-send">POST /chat/send</button>
-    </div>
-    <h3>Response</h3>
-    <pre id="out">(no response yet)</pre>
-    <script>
-      const out = document.getElementById('out');
-      function auth() {
-        const token = document.getElementById('token').value || 'dev';
-        return { 'Authorization': 'Bearer ' + token };
-      }
-      async function call(method, path, body) {
-        const res = await fetch(path, {
-          method,
-          headers: { 'Content-Type': 'application/json', ...auth() },
-          body: body ? JSON.stringify(body) : undefined,
-        });
-        const text = await res.text();
-        try { out.textContent = JSON.stringify(JSON.parse(text), null, 2); }
-        catch { out.textContent = text; }
-      }
-      document.getElementById('btn-health').onclick = () => call('GET', '/health');
-      document.getElementById('btn-state').onclick = () => call('GET', '/state');
-      document.getElementById('btn-agent').onclick = () => call('GET', '/agent');
-      document.getElementById('btn-send').onclick = () => call('POST', '/chat/send', { text: document.getElementById('msg').value || 'Hello!' });
-    </script>
+    <script src="/web/app.js"></script>
   </body>
   </html>
-
