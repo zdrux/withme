@@ -12,6 +12,8 @@
         <div class="brand">With Me</div>
         <div class="agent" id="agentHeader">Loading agent…</div>
         <div class="auth">
+          <a href="/web/admin.html" style="text-decoration:none"><button type="button">Admin</button></a>
+          <select id="agentSelect" style="min-width:220px"></select>
           <input id="token" placeholder="Bearer token (dev for local)" />
           <button id="saveToken">Save</button>
         </div>
@@ -26,10 +28,6 @@
         <div class="row">
           <input id="message" placeholder="Type a message…" />
           <button id="send">Send</button>
-        </div>
-        <div class="row">
-          <input id="imgPrompt" placeholder="Optional: request an image (prompt)" />
-          <button id="requestImg">Request Image</button>
         </div>
       </footer>
     </div>

@@ -30,10 +30,20 @@ async def get_or_create_agent(session: AsyncSession, user: User) -> Agent:
         name="Daniel",
         persona_json={"summary": "Witty, busy professional with warm evenings."},
         romance_allowed=True,
+        timezone="UTC",
     )
     session.add(agent)
     await session.flush()
     return agent
+
+
+async def get_agent_for_user(session: AsyncSession, user: User, agent_id: uuid.UUID | None) -> Agent:
+    if agent_id:
+        res = await session.execute(select(Agent).where(Agent.id == agent_id, Agent.user_id == user.id))
+        found = res.scalars().first()
+        if found:
+            return found
+    return await get_or_create_agent(session, user)
 
 
 async def upsert_device(session: AsyncSession, user: User, platform: str, token: str) -> UserDevice:
@@ -56,4 +66,3 @@ async def create_message(session: AsyncSession, user_id: uuid.UUID, agent_id: uu
     session.add(msg)
     await session.flush()
     return msg
-

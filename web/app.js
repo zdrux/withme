@@ -3,6 +3,7 @@ const state = {
   nextBefore: null,
   loading: false,
   poll: null,
+  agentId: localStorage.getItem('agent_id') || null,
 };
 
 const el = (id) => document.getElementById(id);
@@ -13,7 +14,10 @@ function setToken(t) {
 }
 
 function authHeaders() {
-  return { Authorization: 'Bearer ' + (state.token || 'dev') };
+  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+  const h = { Authorization: 'Bearer ' + (state.token || 'dev'), 'X-User-TZ': tz };
+  if (state.agentId) h['X-Agent-ID'] = state.agentId;
+  return h;
 }
 
 async function api(path, opts = {}) {
@@ -78,6 +82,7 @@ function renderMessages(items, { prepend = false } = {}) {
 async function loadInitial() {
   try {
     el('token').value = state.token;
+    await ensureAgentSelect();
     const [agent, s, page] = await Promise.all([
       api('/agent'),
       api('/state'),
@@ -134,18 +139,63 @@ async function refreshRecent() {
   } catch {}
 }
 
-async function requestImage() {
-  const prompt = el('imgPrompt').value.trim();
-  if (!prompt) return;
-  el('imgPrompt').value = '';
+async function ensureAgentSelect() {
   try {
-    await api('/chat/request_image', { method: 'POST', body: { prompt } });
-    // Poll for the image message
-    if (state.poll) clearInterval(state.poll);
-    state.poll = setInterval(refreshRecent, 2000);
-    setTimeout(() => state.poll && clearInterval(state.poll), 20000);
-  } catch (e) { console.error(e); }
+    const sel = el('agentSelect');
+    sel.innerHTML = '';
+    let data = await api('/admin/agents');
+    let items = data.items || [];
+    // If no agents yet, touch /agent to trigger default creation, then refetch
+    if (!items.length) {
+      try { await api('/agent'); } catch {}
+      data = await api('/admin/agents');
+      items = data.items || [];
+    }
+    if (!state.agentId && items.length) state.agentId = items[0].id;
+    let matched = false;
+    items.forEach(a => {
+      const opt = document.createElement('option');
+      opt.value = a.id; opt.textContent = a.name;
+      if (a.id === state.agentId) { opt.selected = true; matched = true; }
+      sel.appendChild(opt);
+    });
+    if (!matched && items.length) {
+      sel.value = items[0].id;
+      state.agentId = items[0].id;
+      localStorage.setItem('agent_id', state.agentId || '');
+    }
+    sel.onchange = async () => {
+      state.agentId = sel.value || null;
+      localStorage.setItem('agent_id', state.agentId || '');
+      // reload header and history for new agent
+      const [agent, s, page] = await Promise.all([
+        api('/agent'), api('/state'), api('/messages')
+      ]);
+      renderAgentHeader(agent, s);
+      const history = el('history');
+      history.innerHTML = '';
+      const items2 = (page.items || []).slice().sort((a,b) => new Date(a.created_at) - new Date(b.created_at));
+      renderMessages(items2);
+      state.nextBefore = page.next_before;
+    };
+  } catch (e) {
+    console.warn('agent select load failed', e);
+    try {
+      // Robust fallback: ensure one agent exists, then populate from /agent
+      const agent = await api('/agent');
+      const sel = el('agentSelect');
+      sel.innerHTML = '';
+      const opt = document.createElement('option');
+      opt.value = agent.id; opt.textContent = agent.name || 'Agent';
+      sel.appendChild(opt);
+      state.agentId = agent.id;
+      localStorage.setItem('agent_id', state.agentId || '');
+    } catch (e2) {
+      console.warn('fallback /agent failed', e2);
+    }
+  }
 }
+
 
 // Wire events
 window.addEventListener('DOMContentLoaded', () => {
@@ -154,7 +204,6 @@ window.addEventListener('DOMContentLoaded', () => {
   el('message').addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
   });
-  el('requestImg').onclick = requestImage;
   el('loadMore').onclick = loadMore;
   loadInitial();
 });

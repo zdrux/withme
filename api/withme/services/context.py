@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime
+from zoneinfo import ZoneInfo
 from typing import Any
 
 from sqlalchemy import select
@@ -32,7 +33,7 @@ class Context:
     flags: dict[str, Any]
 
 
-async def build_context(session: AsyncSession, agent: Agent, last_n: int = 20) -> Context:
+async def build_context(session: AsyncSession, agent: Agent, last_n: int = 20, tz_hint: str | None = None) -> Context:
     # Recency retrieval
     res = await session.execute(
         select(Message)
@@ -46,7 +47,12 @@ async def build_context(session: AsyncSession, agent: Agent, last_n: int = 20) -
     sres = await session.execute(select(Scenario).where(Scenario.agent_id == agent.id).order_by(Scenario.track))
     scs = sres.scalars().all()
 
-    now = datetime.now(timezone.utc)
+    # Compute availability in agent's (or user-provided) timezone
+    tzname = (tz_hint or getattr(agent, "timezone", None) or "UTC")
+    try:
+        now = datetime.now(ZoneInfo(tzname))
+    except Exception:
+        now = datetime.now()
     # semantic retrieval over the last user message for enrichment (best-effort)
     q_text = next((m.text or "" for m in reversed(msgs) if m.text and m.role == "user"), "")
     sem = semantic_query(q_text) if q_text else []
@@ -56,5 +62,5 @@ async def build_context(session: AsyncSession, agent: Agent, last_n: int = 20) -
         scenarios=[{"track": s.track, "title": s.title, "progress": s.progress} for s in scs],
         mood=agent.mood,
         availability=_availability(now),
-        flags={"romance_allowed": agent.romance_allowed, "semantic": sem},
+        flags={"romance_allowed": agent.romance_allowed, "semantic": sem, "timezone": tzname},
     )

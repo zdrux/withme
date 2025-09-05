@@ -10,7 +10,7 @@ spec:
           containers:
             - name: sweeper
               image: curlimages/curl:8.9.1
-              command: ["sh","-lc","curl -sS -X POST -H 'Authorization: Bearer $CRON_TOKEN' http://api.withme.local/cron/daily_event || true"]
+              command: ["sh","-lc","curl -sS -X POST -H 'Authorization: Bearer $CRON_TOKEN' http://api/cron/daily_event || true"]
               env:
                 - name: CRON_TOKEN
                   valueFrom: { secretKeyRef: { name: withme-secrets, key: CRON_TOKEN } }
@@ -28,7 +28,7 @@ spec:
           containers:
             - name: refresher
               image: curlimages/curl:8.9.1
-              command: ["sh","-lc","curl -sS -X POST -H 'Authorization: Bearer $CRON_TOKEN' http://api.withme.local/cron/semantic_refresh || true"]
+              command: ["sh","-lc","curl -sS -X POST -H 'Authorization: Bearer $CRON_TOKEN' http://api/cron/semantic_refresh || true"]
               env:
                 - name: CRON_TOKEN
                   valueFrom: { secretKeyRef: { name: withme-secrets, key: CRON_TOKEN } }

@@ -2,8 +2,8 @@ from fastapi import APIRouter, Header, HTTPException
 from sqlalchemy import select
 
 from ..db import session_scope
-from ..models import Agent, Event, SemanticMemory
-from ..providers.openai_client import OpenAIProvider
+from ..models import Agent, Event
+from ..services.semantic import maybe_update_semantic_memory
 from ..config import get_settings
 
 
@@ -48,34 +48,13 @@ async def semantic_refresh(authorization: str | None = Header(default=None)):
     if not _authorized(internal_token, authorization):
         raise HTTPException(status_code=403, detail="Forbidden")
     updated = 0
-    if not settings.openai_api_key:
-        return {"ok": True, "updated": 0}
-    provider = OpenAIProvider()
     async with session_scope() as session:
         res = await session.execute(select(Agent))
         for agent in res.scalars():
-            # Very simple semantic refresh: summarize last 20 messages into stable facts
-            from .messages import list_messages  # avoid circular imports at module import
-            # Instead of calling the route, query directly
-            msgs_res = await session.execute(
-                select(Event)
-            )
-            # Build a small prompt using recent context via messages table
-            from sqlalchemy import select as _select
-            from ..models import Message
-            r = await session.execute(
-                _select(Message).where(Message.agent_id == agent.id).order_by(Message.created_at.desc()).limit(20)
-            )
-            texts = []
-            for m in reversed(r.scalars().all()):
-                if m.text:
-                    texts.append(f"{m.role}: {m.text}")
-            convo = "\n".join(texts)
-            if not convo:
-                continue
-            sys = "Summarize stable facts/preferences learned from this conversation in 3-5 bullets."
-            summary = provider.chat(sys, [{"role": "user", "content": convo}])
-            mem = SemanticMemory(agent_id=agent.id, content=summary)
-            session.add(mem)
-            updated += 1
+            try:
+                ok = await maybe_update_semantic_memory(session, agent, min_interval_hours=24)
+                if ok:
+                    updated += 1
+            except Exception:
+                pass
     return {"ok": True, "updated": updated}

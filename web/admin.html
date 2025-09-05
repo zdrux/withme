@@ -1,0 +1,151 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>With Me — Admin Panel</title>
+    <link rel="stylesheet" href="/web/styles.css" />
+  </head>
+  <body>
+    <div class="container">
+      <h1>With Me — Admin Panel</h1>
+      <div class="card">
+        <h2>Auth</h2>
+        <div class="row">
+          <label>Bearer Token:</label>
+          <input id="token" placeholder="dev" />
+          <button id="saveToken">Use Token</button>
+          <span id="authStatus"></span>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div class="card">
+          <h2>Agents</h2>
+          <div class="row">
+            <button id="refreshAgents">Refresh</button>
+            <button id="openCreate">Create (Basic)</button>
+            <button id="openGenerate">Generate (LLM)</button>
+          </div>
+          <div id="agents"></div>
+        </div>
+
+        <div class="card">
+          <h2>Selected Agent</h2>
+          <div id="agentDetail">None selected</div>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div class="card">
+          <h2>Scenarios</h2>
+          <div id="scenarios"></div>
+        </div>
+
+        <div class="card">
+          <h2>Events</h2>
+          <div id="events"></div>
+        </div>
+      </div>
+
+      <dialog id="createDlg">
+        <h3>Create Agent</h3>
+        <div class="form-rows">
+          <div class="form-row">
+            <label for="createName">Name</label>
+            <input id="createName" placeholder="e.g., Daniel" />
+            <div class="help">Display name shown in chat.</div>
+          </div>
+          <div class="form-row">
+            <label for="createAppearance">Appearance Prompt</label>
+            <input id="createAppearance" placeholder="e.g., slim build, shoulder-length brown hair, blue eyes, casual office attire" />
+            <div class="help">Describe body type, hair, etc. Used to generate a base image.</div>
+          </div>
+          <div class="form-row">
+            <label for="createRomance">Romance Allowed</label>
+            <div class="row"><input id="createRomance" type="checkbox" /> <span class="help">Enable warmer tone and image eligibility as affinity rises.</span></div>
+          </div>
+          <div class="form-row">
+            <label for="createInit">Initiation Tendency</label>
+            <input id="createInit" type="number" min="0" max="1" step="0.05" value="0.4" />
+            <div class="help">0.0 (reserved) … 1.0 (proactive). Default 0.4.</div>
+          </div>
+          <div class="form-row">
+            <label for="createPersona">Persona JSON</label>
+            <textarea id="createPersona" rows="10" placeholder='{"summary":"Witty, busy professional with warm evenings.","traits":["witty","grounded","curious"],"likes":["coffee","evening runs","indie music"],"dislikes":["lateness"],"speaking_style":"Warm, light sarcasm; concise during work hours.","offline_life":{"availability":{"commute":"07-09","work":"09-17","evening":"18-23","sleep":"23-07"},"habits":["Morning pour-over","Run 3x/week"]},"safety":{"no_romance":false,"boundaries":["PG-13 only"]}}'></textarea>
+            <div class="help">Paste a full persona object; fields beyond summary are optional.</div>
+          </div>
+        </div>
+        <div class="row">
+          <button id="createSubmit">Create</button>
+          <button id="createCancel">Cancel</button>
+        </div>
+      </dialog>
+
+      <dialog id="generateDlg">
+        <h3>Generate Agent (LLM)</h3>
+        <div class="form-rows">
+          <div class="form-row">
+            <label for="genName">Name</label>
+            <input id="genName" placeholder="e.g., Maya" />
+            <div class="help">Display name shown in chat.</div>
+          </div>
+          <div class="form-row">
+            <label for="genAppearance">Appearance Prompt</label>
+            <input id="genAppearance" placeholder="e.g., athletic build, short black hair, green eyes, cozy sweater" />
+            <div class="help">Optional: override LLM with your own base image prompt.</div>
+          </div>
+          <div class="form-row">
+            <label for="genArchPreset">Archetype Preset</label>
+            <select id="genArchPreset">
+              <option value="">— select a preset —</option>
+            </select>
+            <div class="help">Choose a compact persona seed. You can also add your own below.</div>
+          </div>
+          <div class="form-row">
+            <label for="genArch">Archetype (custom)</label>
+            <input id="genArch" placeholder="busy product manager in a big city, warm evenings" />
+            <div class="help">1–2 short clauses. Role + context + tone.</div>
+          </div>
+          <div class="form-row">
+            <label for="genTraits">Traits</label>
+            <input id="genTraits" placeholder="witty, grounded, curious" />
+            <div class="chips" id="traitChips"></div>
+            <div class="help">3–7 adjectives (e.g., playful, attentive, ambitious).</div>
+          </div>
+          <div class="form-row">
+            <label for="genLikes">Likes</label>
+            <input id="genLikes" placeholder="coffee, long walks, indie music" />
+            <div class="chips" id="likeChips"></div>
+            <div class="help">Interests/activities (3–7).</div>
+          </div>
+          <div class="form-row">
+            <label for="genDislikes">Dislikes</label>
+            <input id="genDislikes" placeholder="lateness, loud bars" />
+            <div class="chips" id="dislikeChips"></div>
+            <div class="help">Pet peeves/boundaries (2–5).</div>
+          </div>
+          <div class="form-row">
+            <label for="genRomance">Romance Allowed</label>
+            <div class="row"><input id="genRomance" type="checkbox" /> <span class="help">Enables romance tone when affinity increases.</span></div>
+          </div>
+          <div class="form-row">
+            <label for="genInit">Initiation Tendency</label>
+            <input id="genInit" type="number" min="0" max="1" step="0.05" value="0.4" />
+            <div class="help">0.0 (reserved) … 1.0 (proactive). Default 0.4.</div>
+          </div>
+          <div class="form-row">
+            <label for="genImageThr">Image Threshold</label>
+            <input id="genImageThr" type="number" min="0" max="1" step="0.05" value="0.6" />
+            <div class="help">Minimum affinity (0..1) to allow images. Default 0.6.</div>
+          </div>
+        </div>
+        <div class="row">
+          <button id="genSubmit">Generate</button>
+          <button id="genCancel">Cancel</button>
+        </div>
+      </dialog>
+    </div>
+    <script src="/web/admin.js"></script>
+  </body>
+  </html>

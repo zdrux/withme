@@ -42,6 +42,9 @@ def create_app() -> FastAPI:
         @app.get("/")
         async def root_redirect():
             return RedirectResponse(url="/web/")
+        @app.get("/admin")
+        async def admin_redirect():
+            return RedirectResponse(url="/web/admin.html")
     except Exception:
         # Web folder may not exist yet in early scaffolding.
         pass

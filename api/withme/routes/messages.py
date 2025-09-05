@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import uuid
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Header
 from sqlalchemy import select
 
 from ..security import get_current_user
@@ -18,11 +18,16 @@ async def list_messages(
     limit: int = Query(50, le=200),
     before: str | None = Query(None, description="ISO timestamp to paginate backwards"),
     user=Depends(get_current_user),
+    x_agent_id: str | None = Header(default=None, alias="X-Agent-ID"),
 ):
     user_id = uuid.UUID(str(user["id"]))
     async with session_scope() as session:
         db_user = await crud.get_or_create_user(session, user_id=user_id, email=user.get("email", "dev@example.com"))
-        agent = await crud.get_or_create_agent(session, db_user)
+        try:
+            aid = uuid.UUID(x_agent_id) if x_agent_id else None
+        except Exception:
+            aid = None
+        agent = await crud.get_agent_for_user(session, db_user, aid)
         q = (
             select(Message)
             .where(Message.user_id == db_user.id, Message.agent_id == agent.id)

@@ -43,8 +43,10 @@
 
 ### 3.2 Images
 
-* On explicit user request; allowed if `affinity ≥ threshold` and `romance_allowed = true`
-* Uses Fal.AI workflow with PG‑13 style guide; result stored as CDN URL
+* Base portrait at agent creation (Flux) using an optional physical `appearance_prompt` (body type, hair, style, attire). The generated base is uploaded to Supabase Storage and saved as `agents.base_image_url`.
+* All subsequent images are variations via `fal-ai/nano-banana/edit` using the base portrait and a context prompt (availability, mood, expression).
+* Allowed if `affinity ≥ threshold` and `romance_allowed = true`.
+* UI: users ask the agent for a picture in chat (no separate image prompt field).
 
 ### 3.3 Affinity (Hidden)
 
@@ -152,6 +154,8 @@ create table agents (
   image_threshold real not null default 0.6,
   mood real not null default 0.0,
   affinity real not null default 0.3,
+  timezone text not null default 'UTC',
+  base_image_url text,
   last_mood_update_at timestamptz,
   created_at timestamptz not null default now()
 );
@@ -207,6 +211,7 @@ create table image_jobs (
   agent_id uuid references agents(id) on delete cascade,
   prompt text not null,
   status text check (status in ('queued','running','succeeded','failed')) not null,
+  kind text check (kind in ('base','gen','edit')),
   result_url text,
   created_at timestamptz not null default now()
 );
@@ -296,10 +301,11 @@ P = base * sigm(k1*(A-0.5)) * sigm(k2*M) * window_factor * cooldown_factor
   * **Req** `{ "text":"How was your day?" }`
   * **Res** `{ "message_id":"...", "reply": { "text":"Just finished a tough meeting...", "image_url":null } }`
 
-* `POST /chat/request_image`
+* `POST /chat/request_image` (programmatic only; not used by UI)
 
-  * **Req** `{ "prompt":"Selfie at the cafe" }`
-  * **Res** `{ "job_id":"...", "status":"queued" }`
+  * **Req** `{ "prompt":"..." }`
+  * If no `base_image_url` exists → queues a `base` (Flux) job and returns `status=queued_base`.
+  * Else queues an `edit` (banana) job and returns `status=queued`.
 
 * `POST /webhooks/fal`  (Fal.AI → server)
 
@@ -310,7 +316,7 @@ P = base * sigm(k1*(A-0.5)) * sigm(k2*M) * window_factor * cooldown_factor
 
 * `POST /admin/agent`
 
-  * **Req** `{ "name":"Daniel", "persona":{...}, "romance_allowed":true, "initiation_tendency":0.25 }`
+  * **Req** `{ "name":"Daniel", "persona":{...}, "romance_allowed":true, "initiation_tendency":0.25, "appearance_prompt":"..." }`
   * **Res** `{ "id":"..." }`
 
 * `PATCH /admin/agent/{id}` — edit persona/flags/thresholds
@@ -577,4 +583,10 @@ async def send_chat(req: ChatReq, user=Depends(auth)):
 * No nudity; no minors; no explicit sexual content; avoid fetishized depictions
 * Cinematic, tasteful, fully clothed, romantic tones allowed if `romance_allowed`
 * Use persona aesthetics; avoid real‑person likeness
+* `POST /admin/storage/ensure_bucket` — ensure Supabase Storage bucket `agent-avatars` exists.
+## 20) Identity & Time Awareness (MVP)
+
+* Agents carry identity in `persona_json`: `home_city`, `occupation`, `timezone` (IANA), optional `appearance.base_image_prompt`.
+* Prompts include local time and small weather flavor for realism; tone varies by mood/affinity.
+* Availability computed from agent TZ or client `X-User-TZ` header.
 

@@ -64,6 +64,8 @@ class Agent(Base):
     image_threshold: Mapped[float] = mapped_column(Float, default=0.6, nullable=False)
     mood: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
     affinity: Mapped[float] = mapped_column(Float, default=0.3, nullable=False)
+    timezone: Mapped[str] = mapped_column(String, default="UTC", nullable=False)
+    base_image_url: Mapped[Optional[str]] = mapped_column(Text)
     last_mood_update_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow, nullable=False)
 
@@ -137,10 +139,11 @@ class ImageJob(Base):
     agent_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("agents.id", ondelete="CASCADE"))
     prompt: Mapped[str] = mapped_column(Text, nullable=False)
     status: Mapped[str] = mapped_column(String, nullable=False)
+    kind: Mapped[Optional[str]] = mapped_column(String)  # 'base' | 'gen' | 'edit'
     result_url: Mapped[Optional[str]] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow, nullable=False)
 
     __table_args__ = (
         CheckConstraint("status in ('queued','running','succeeded','failed')", name="ck_image_jobs_status"),
+        CheckConstraint("kind is null or kind in ('base','gen','edit')", name="ck_image_jobs_kind"),
     )
-

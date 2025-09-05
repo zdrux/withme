@@ -12,14 +12,15 @@ class Settings(BaseSettings):
 
     # External services
     openai_api_key: str | None = None
-    pinecone_api_key: str | None = Field(default=None, validation_alias=AliasChoices("PINECONE_API_KEY", "PINE_CONE_API_KEY"))
+    # Use env to support multiple var names reliably in BaseSettings
+    pinecone_api_key: str | None = Field(default=None, env=["PINECONE_API_KEY", "PINE_CONE_API_KEY"])
     supabase_url: str | None = None
     supabase_project_url: str | None = None
-    supabase_jwt_secret: str | None = Field(default=None, validation_alias=AliasChoices("SUPABASE_JWT_SECRET", "SUPABASE_JWT_TOKEN"))
+    supabase_jwt_secret: str | None = Field(default=None, env=["SUPABASE_JWT_SECRET", "SUPABASE_JWT_TOKEN"])
     supabase_anon_key: str | None = None
     supabase_service_role_key: str | None = None
     redis_url: str | None = "redis://localhost:6379/0"
-    fal_api_key: str | None = Field(default=None, validation_alias=AliasChoices("FAL_API_KEY", "FALAI_API_KEY"))
+    fal_api_key: str | None = Field(default=None, env=["FAL_API_KEY", "FALAI_API_KEY"])
     fcm_server_key: str | None = None
     cron_token: str | None = None
 
