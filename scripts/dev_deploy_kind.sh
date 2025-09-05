@@ -4,6 +4,14 @@ set -euo pipefail
 NS=withme
 CLUSTER=withme
 
+# Load local env if present
+set +u
+if [ -f .env ]; then
+  # shellcheck disable=SC2046
+  export $(grep -v '^#' .env | xargs -d '\n' -I{} echo {})
+fi
+set -u
+
 echo "[1/9] Building images..."
 docker build -t withme-api:dev -f api/Dockerfile .
 docker build -t withme-worker:dev -f worker/Dockerfile .
@@ -17,7 +25,17 @@ kubectl get ns "$NS" >/dev/null 2>&1 || kubectl create namespace "$NS"
 kubectl -n "$NS" create secret generic withme-secrets \
   --from-literal=ENVIRONMENT=dev \
   --from-literal=REDIS_URL=redis://redis.$NS.svc.cluster.local:6379/0 \
-  --from-literal=DATABASE_URL=postgresql+asyncpg://withme:withme@postgres.$NS.svc.cluster.local:5432/withme \
+  --from-literal=DATABASE_URL=${DATABASE_URL:-postgresql+asyncpg://withme:withme@postgres.$NS.svc.cluster.local:5432/withme} \
+  --from-literal=SUPABASE_URL=${SUPABASE_URL:-} \
+  --from-literal=SUPABASE_PROJECT_URL=${SUPABASE_PROJECT_URL:-} \
+  --from-literal=SUPABASE_DB_PASSWORD=${SUPABASE_DB_PASSWORD:-} \
+  --from-literal=SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY:-} \
+  --from-literal=SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY:-} \
+  --from-literal=SUPABASE_JWT_SECRET=${SUPABASE_JWT_SECRET:-} \
+  --from-literal=SUPABASE_JWT_TOKEN=${SUPABASE_JWT_TOKEN:-} \
+  --from-literal=OPENAI_API_KEY=${OPENAI_API_KEY:-} \
+  --from-literal=FAL_API_KEY=${FAL_API_KEY:-} \
+  --from-literal=FALAI_API_KEY=${FALAI_API_KEY:-} \
   --dry-run=client -o yaml | kubectl apply -f -
 
 echo "[4/9] Applying DB and Redis..."
