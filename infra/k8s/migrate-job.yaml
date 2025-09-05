@@ -1,0 +1,20 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: migrate
+  namespace: withme
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: migrate
+          image: withme-api:dev
+          command: ["alembic","-c","/app/alembic.ini","upgrade","head"]
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: withme-secrets
+                  key: DATABASE_URL
+          workingDir: /app

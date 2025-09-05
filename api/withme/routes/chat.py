@@ -7,6 +7,7 @@ from ..db import session_scope
 from .. import crud
 from ..jobs import get_queue
 from ..models import ImageJob
+from ..services.context import build_context
 
 
 router = APIRouter()
@@ -23,8 +24,15 @@ async def send_chat(req: SendChatReq, user=Depends(get_current_user)):
         db_user = await crud.get_or_create_user(session, user_id=user_id, email=user.get("email", "dev@example.com"))
         agent = await crud.get_or_create_agent(session, db_user)
         user_msg = await crud.create_message(session, user_id=db_user.id, agent_id=agent.id, role="user", text=req.text)
-        # Placeholder inference
-        reply_text = "Just finished a tough meeting, glad to hear from you."
+        # Build context (recency + scenarios + mood/availability)
+        ctx = await build_context(session, agent)
+        # Placeholder inference 
+        if ctx.availability == "work":
+            reply_text = "At work, swamped! Ping me later?"
+        elif ctx.availability == "evening":
+            reply_text = "Just finished a tough meeting, glad to hear from you."
+        else:
+            reply_text = "Catching my breath—what’s on your mind?"
         agent_msg = await crud.create_message(session, user_id=db_user.id, agent_id=agent.id, role="agent", text=reply_text)
     return {"message_id": str(user_msg.id), "reply": {"text": reply_text, "id": str(agent_msg.id)}}
 

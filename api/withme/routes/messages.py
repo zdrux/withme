@@ -14,19 +14,32 @@ router = APIRouter()
 
 
 @router.get("/messages")
-async def list_messages(limit: int = Query(50, le=200), user=Depends(get_current_user)):
+async def list_messages(
+    limit: int = Query(50, le=200),
+    before: str | None = Query(None, description="ISO timestamp to paginate backwards"),
+    user=Depends(get_current_user),
+):
     user_id = uuid.UUID(str(user["id"]))
     async with session_scope() as session:
         db_user = await crud.get_or_create_user(session, user_id=user_id, email=user.get("email", "dev@example.com"))
         agent = await crud.get_or_create_agent(session, db_user)
-        res = await session.execute(
+        q = (
             select(Message)
             .where(Message.user_id == db_user.id, Message.agent_id == agent.id)
             .order_by(Message.created_at.desc())
-            .limit(limit)
         )
+        if before:
+            from datetime import datetime
+
+            try:
+                bt = datetime.fromisoformat(before)
+                q = q.where(Message.created_at < bt)
+            except Exception:
+                pass
+        q = q.limit(limit)
+        res = await session.execute(q)
         rows = res.scalars().all()
-        return [
+        data = [
             {
                 "id": str(m.id),
                 "role": m.role,
@@ -36,4 +49,5 @@ async def list_messages(limit: int = Query(50, le=200), user=Depends(get_current
             }
             for m in rows
         ]
-
+        next_before = rows[-1].created_at.isoformat() if rows else None
+        return {"items": data, "next_before": next_before}
