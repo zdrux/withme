@@ -2,16 +2,18 @@ apiVersion: batch/v1
 kind: CronJob
 metadata: { name: daily-event }
 spec:
-  schedule: "0 * * * *"
+  schedule: "0 * * * *"   # hourly sweep to simulate per-timezone
   jobTemplate:
     spec:
       template:
         spec:
           containers:
             - name: sweeper
-              image: ghcr.io/withme/cron:0.1.0
-              command: ["python","-m","cron.daily_event"]
-              envFrom: [ { secretRef: { name: withme-secrets } } ]
+              image: curlimages/curl:8.9.1
+              command: ["sh","-lc","curl -sS -X POST -H 'Authorization: Bearer $CRON_TOKEN' http://api.withme.local/cron/daily_event || true"]
+              env:
+                - name: CRON_TOKEN
+                  valueFrom: { secretKeyRef: { name: withme-secrets, key: CRON_TOKEN } }
           restartPolicy: OnFailure
 ---
 apiVersion: batch/v1
@@ -25,8 +27,9 @@ spec:
         spec:
           containers:
             - name: refresher
-              image: ghcr.io/withme/cron:0.1.0
-              command: ["python","-m","cron.semantic_refresh"]
-              envFrom: [ { secretRef: { name: withme-secrets } } ]
+              image: curlimages/curl:8.9.1
+              command: ["sh","-lc","curl -sS -X POST -H 'Authorization: Bearer $CRON_TOKEN' http://api.withme.local/cron/semantic_refresh || true"]
+              env:
+                - name: CRON_TOKEN
+                  valueFrom: { secretKeyRef: { name: withme-secrets, key: CRON_TOKEN } }
           restartPolicy: OnFailure
-

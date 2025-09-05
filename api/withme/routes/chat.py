@@ -35,11 +35,17 @@ async def send_chat(req: SendChatReq, user=Depends(get_current_user)):
 
             settings = get_settings()
             if settings.openai_api_key:
+                # Compose richer system prompt using PRD guidance
+                persona = agent.persona_json
+                sem = ctx.flags.get("semantic") if isinstance(ctx.flags, dict) else []
+                sem_str = ", ".join([m.get("metadata", {}).get("content", "") for m in sem][:3]) if sem else ""
+                scenarios = ", ".join([f"{s['track']}:{s['title']}({s['progress']:.0%})" for s in ctx.scenarios])
                 system = (
-                    f"You are {agent.name}, an AI companion.\n"
-                    f"Persona: {agent.persona_json}. Safety: PG-13; no explicit content.\n"
-                    f"State: mood={agent.mood}, availability={ctx.availability}, scenarios={ctx.scenarios}.\n"
-                    "Style: Vary length by availability; stay in-character; show continuity."
+                    f"You are {agent.name}, an AI companion. Persona: {persona}.\n"
+                    f"State: mood={agent.mood:.2f}, availability={ctx.availability}, scenarios=[{scenarios}].\n"
+                    f"Semantic hints: {sem_str}.\n"
+                    "Safety: PG-13; no explicit content. Romance allowed only if flag is true.\n"
+                    "Style: Vary length by availability; stay in-character; continuity; avoid over-eagerness unless affinity is high."
                 )
                 user_msgs = [{"role": "user", "content": req.text}]
                 provider = OpenAIProvider()
@@ -57,7 +63,7 @@ async def send_chat(req: SendChatReq, user=Depends(get_current_user)):
         agent_msg = await crud.create_message(session, user_id=db_user.id, agent_id=agent.id, role="agent", text=reply_text)
         # Heuristic mood + affinity updates
         await apply_mood_microdelta(session, agent, req.text)
-        await apply_affinity_delta(session, agent, req.text, reply_text)
+        await apply_affinity_delta(session, agent, req.text, reply_text, message_id=agent_msg.id)
     return {"message_id": str(user_msg.id), "reply": {"text": reply_text, "id": str(agent_msg.id)}}
 
 

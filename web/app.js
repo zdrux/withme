@@ -84,7 +84,8 @@ async function loadInitial() {
       api('/messages'),
     ]);
     renderAgentHeader(agent, s);
-    renderMessages(page.items || []);
+    const items = (page.items || []).slice().sort((a,b) => new Date(a.created_at) - new Date(b.created_at));
+    renderMessages(items);
     state.nextBefore = page.next_before;
   } catch (e) {
     console.error(e);
@@ -97,7 +98,8 @@ async function loadMore() {
   try {
     const page = await api(`/messages?before=${encodeURIComponent(state.nextBefore)}`);
     if (page.items?.length) {
-      renderMessages(page.items, { prepend: true });
+      const items = page.items.slice().sort((a,b) => new Date(a.created_at) - new Date(b.created_at));
+      renderMessages(items, { prepend: true });
       state.nextBefore = page.next_before;
     } else {
       state.nextBefore = null;
@@ -127,7 +129,8 @@ async function refreshRecent() {
     // Replace tail then scroll to bottom
     const history = el('history');
     history.innerHTML = '';
-    renderMessages(page.items || []);
+    const items = (page.items || []).slice().sort((a,b) => new Date(a.created_at) - new Date(b.created_at));
+    renderMessages(items);
   } catch {}
 }
 

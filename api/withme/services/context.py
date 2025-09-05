@@ -8,6 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..models import Message, Scenario, Agent
+from .retrieval import semantic_query
 
 
 def _availability(now: datetime) -> str:
@@ -46,10 +47,14 @@ async def build_context(session: AsyncSession, agent: Agent, last_n: int = 20) -
     scs = sres.scalars().all()
 
     now = datetime.now(timezone.utc)
+    # semantic retrieval over the last user message for enrichment (best-effort)
+    q_text = next((m.text or "" for m in reversed(msgs) if m.text and m.role == "user"), "")
+    sem = semantic_query(q_text) if q_text else []
+
     return Context(
         messages=[{"role": m.role, "text": m.text, "image_url": m.image_url, "ts": m.created_at.isoformat()} for m in msgs],
         scenarios=[{"track": s.track, "title": s.title, "progress": s.progress} for s in scs],
         mood=agent.mood,
         availability=_availability(now),
-        flags={"romance_allowed": agent.romance_allowed},
+        flags={"romance_allowed": agent.romance_allowed, "semantic": sem},
     )

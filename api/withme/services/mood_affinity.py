@@ -36,7 +36,7 @@ async def apply_mood_microdelta(session: AsyncSession, agent: Agent, user_text: 
     agent.last_mood_update_at = now
 
 
-async def apply_affinity_delta(session: AsyncSession, agent: Agent, user_text: str, reply_text: str) -> None:
+async def apply_affinity_delta(session: AsyncSession, agent: Agent, user_text: str, reply_text: str, message_id=None) -> None:
     # Very light heuristic aligned to PRD structure
     lowered = user_text.lower()
     emp = 1.0 if any(x in lowered for x in ("sorry", "you okay", "are you ok", "proud")) else 0.0
@@ -51,12 +51,12 @@ async def apply_affinity_delta(session: AsyncSession, agent: Agent, user_text: s
     delta = max(-0.1, min(0.1, delta_raw))
 
     agent.affinity = _clamp(agent.affinity + delta, 0.0, 1.0)
-    session.add(
-        AffinityDelta(
-            agent_id=agent.id,
-            message_id=None,  # filled by message pipeline elsewhere if needed
-            feature="micro",
-            delta=delta,
+    if message_id is not None:
+        session.add(
+            AffinityDelta(
+                agent_id=agent.id,
+                message_id=message_id,
+                feature="micro",
+                delta=delta,
+            )
         )
-    )
-

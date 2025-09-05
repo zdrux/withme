@@ -14,6 +14,9 @@ set -u
 
 echo "[1/9] Building images..."
 docker build -t withme-api:dev -f api/Dockerfile .
+  --from-literal=PINECONE_API_KEY=${PINECONE_API_KEY:-} \\
+  --from-literal=PINE_CONE_API_KEY=${PINE_CONE_API_KEY:-} \\
+  --from-literal=CRON_TOKEN=${CRON_TOKEN:-changeme} \\
 docker build -t withme-worker:dev -f worker/Dockerfile .
 
 echo "[2/9] Loading images into kind..."
@@ -34,8 +37,11 @@ kubectl -n "$NS" create secret generic withme-secrets \
   --from-literal=SUPABASE_JWT_SECRET=${SUPABASE_JWT_SECRET:-} \
   --from-literal=SUPABASE_JWT_TOKEN=${SUPABASE_JWT_TOKEN:-} \
   --from-literal=OPENAI_API_KEY=${OPENAI_API_KEY:-} \
+  --from-literal=PINECONE_API_KEY=${PINECONE_API_KEY:-} \
+  --from-literal=PINE_CONE_API_KEY=${PINE_CONE_API_KEY:-} \
   --from-literal=FAL_API_KEY=${FAL_API_KEY:-} \
   --from-literal=FALAI_API_KEY=${FALAI_API_KEY:-} \
+  --from-literal=CRON_TOKEN=${CRON_TOKEN:-changeme} \
   --dry-run=client -o yaml | kubectl apply -f -
 
 echo "[4/9] Applying DB and Redis..."

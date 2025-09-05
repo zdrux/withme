@@ -27,4 +27,4 @@ button:hover { border-color: var(--accent); }
 .composer { padding: .75rem 1rem; background: var(--panel); border-top: 1px solid #202937; }
 .row { display: flex; gap: .5rem; margin: .25rem 0; }
 .row input { flex: 1; min-width: 0; }
-.load-more { margin: .5rem auto 1rem; display: block; background: transparent; border-color: #374151; color: var(--muted); }
+.load-more { margin: 0 0 1rem 0; align-self: center; background: transparent; border-color: #374151; color: var(--muted); }
