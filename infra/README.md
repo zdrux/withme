@@ -34,4 +34,4 @@ Local (kind)
 Notes
 - Health/readiness: `/health` on port 8080.
 - Cron security token: ensure `CRON_TOKEN` in `withme-secrets`.
-- Do not commit secrets; use secrets templates and secure channels.
+- In this archival snapshot, `.env` is committed; you can run `make k8s-secrets-from-env` to create the cluster secret. For ongoing ops, do not commit secrets.

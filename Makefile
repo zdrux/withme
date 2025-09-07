@@ -82,3 +82,10 @@ k8s-delete-cron: ## Delete cronjobs
 
 kind-up:
 	kind create cluster --config infra/kind/kind-withme.yaml
+
+k8s-all:
+	$(MAKE) k8s-namespace
+	$(MAKE) k8s-secrets-from-env
+	$(MAKE) k8s-apply-core
+	$(MAKE) k8s-apply-cron
+	$(MAKE) k8s-apply-ingress

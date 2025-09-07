@@ -9,7 +9,7 @@ Scope
 Repository State
 - Branch: `master`.
 - Working tree: clean at time of this commit (no uncommitted changes).
-- `.env` remains uncommitted per security policy; `.env.example` provided.
+- `.env` is included in this repo per wind‑down request for archival and reproducibility; `.env.example` remains for reference.
 
 Build Artifacts
 - Dockerfiles: `api/Dockerfile`, `worker/Dockerfile`.
@@ -49,8 +49,8 @@ Operational Notes
 - Observability: use structured logs with request IDs; avoid logging PII; rate limits should be configured in API.
 
 Security & Secrets
-- Prefer not to commit `.env` or raw API keys. Use Kubernetes Secrets or a secret manager. An example `secrets-template.yaml` is included.
-- If secrets must be stored in Git, use encryption tooling (SOPS, git-crypt) and keep the repo private.
+- This repository intentionally commits `.env` and API keys as part of the wind‑down to preserve a complete snapshot. Treat this repo as highly sensitive and private.
+- For ongoing operation, rotate all keys, and avoid committing secrets. Use Kubernetes Secrets or a secret manager. `infra/k8s/secrets-template.yaml` is included.
 
 Decommission Checklist
 - Disable cronjobs: `kubectl -n withme delete cronjob/daily-event cronjob/semantic-refresh`.
