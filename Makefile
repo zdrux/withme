@@ -57,18 +57,16 @@ k8s-secrets-from-env: ## Create/update secret from .env
 	kubectl -n $(KNS) create secret generic withme-secrets \
 	  --from-env-file=.env --dry-run=client -o yaml | kubectl apply -f -
 
-k8s-apply-core: k8s-namespace ## Apply core services (redis, api, worker)
-	kubectl -n $(KNS) apply -f infra/k8s/redis.yaml
-	kubectl -n $(KNS) apply -f infra/k8s/api-deployment.yaml
-	kubectl -n $(KNS) apply -f infra/k8s/worker-deployment.yaml
+k8s-apply-core: k8s-namespace ## Apply via kustomize (core + ingress + cron)
+	kubectl -n $(KNS) apply -k infra/k8s
 
-k8s-apply-ingress:
-	kubectl -n $(KNS) apply -f infra/k8s/ingress.yaml
+k8s-apply-ingress: k8s-apply-core ## Backwards-compat (no-op; covered by kustomize)
+	@true
 
-k8s-apply-cron:
-	kubectl -n $(KNS) apply -f infra/k8s/cronjobs.yaml
+k8s-apply-cron: k8s-apply-core ## Backwards-compat (no-op; covered by kustomize)
+	@true
 
-k8s-apply: k8s-apply-core k8s-apply-cron ## Apply all default manifests
+k8s-apply: k8s-apply-core ## Apply all default manifests
 
 k8s-migrate: ## Run the migrate job (ensure image matches your API build)
 	kubectl -n $(KNS) apply -f infra/k8s/migrate-job.yaml
@@ -87,5 +85,3 @@ k8s-all:
 	$(MAKE) k8s-namespace
 	$(MAKE) k8s-secrets-from-env
 	$(MAKE) k8s-apply-core
-	$(MAKE) k8s-apply-cron
-	$(MAKE) k8s-apply-ingress

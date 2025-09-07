@@ -16,11 +16,12 @@ Cluster Setup
   - Or edit/apply: `infra/k8s/secrets-template.yaml` with base64 values.
 
 Apply Manifests (Supabase DB)
-- `kubectl -n withme apply -f infra/k8s/redis.yaml`
-- `kubectl -n withme apply -f infra/k8s/api-deployment.yaml`
-- `kubectl -n withme apply -f infra/k8s/worker-deployment.yaml`
-- `kubectl -n withme apply -f infra/k8s/cronjobs.yaml` (optional)
-- `kubectl -n withme apply -f infra/k8s/ingress.yaml` (optional)
+- One-command apply (recommended):
+  - `make k8s-all` (creates namespace, secret from `.env`, and applies all k8s resources via kustomize)
+- Or manual:
+  - `make k8s-namespace`
+  - `make k8s-secrets-from-env`
+  - `kubectl -n withme apply -k infra/k8s`
 Note: Use Supabase as Postgres. Ensure `DATABASE_URL` is set in secret `withme-secrets`. The `postgres.yaml` is an example only and not required for managed DB.
 
 Migrations
