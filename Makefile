@@ -7,7 +7,8 @@ PY := $(VENV)/bin/python
         docker-build docker-build-api docker-build-worker \
         k8s-namespace k8s-secrets-from-env k8s-apply k8s-apply-core \
         k8s-apply-ingress k8s-apply-cron k8s-migrate \
-        k8s-scale-zero k8s-delete-cron kind-up
+        k8s-scale-zero k8s-delete-cron kind-up \
+        k8s-destroy kind-down
 
 venv:
 	$(PYTHON) -m venv $(VENV)
@@ -85,3 +86,11 @@ k8s-all:
 	$(MAKE) k8s-namespace
 	$(MAKE) k8s-secrets-from-env
 	$(MAKE) k8s-apply-core
+
+k8s-destroy: ## Delete all withme resources and namespace
+	kubectl -n $(KNS) delete -k infra/k8s || true
+	kubectl -n $(KNS) delete secret withme-secrets || true
+	kubectl delete namespace $(KNS) || true
+
+kind-down:
+	kind delete cluster --name withme || true

@@ -36,3 +36,12 @@ Notes
 - Health/readiness: `/health` on port 8080.
 - Cron security token: ensure `CRON_TOKEN` in `withme-secrets`.
 - In this archival snapshot, `.env` is committed; you can run `make k8s-secrets-from-env` to create the cluster secret. For ongoing ops, do not commit secrets.
+
+Spin Down / Uninstall
+- Scale to zero: `make k8s-scale-zero`
+- Remove cronjobs: `make k8s-delete-cron`
+- Delete resources + namespace: `make k8s-destroy`
+- Delete local kind cluster (if used): `make kind-down`
+- For other local distros:
+  - minikube: `minikube delete`
+  - k3d: `k3d cluster delete withme`

@@ -58,6 +58,12 @@ Decommission Checklist
 - Revoke API keys at providers (OpenAI, Pinecone, Fal.AI, FCM, Supabase).
 - Archive GH repo and container images if desired.
 
+Spin Down Commands
+- `make k8s-scale-zero` — scale api/worker to 0.
+- `make k8s-delete-cron` — delete CronJobs.
+- `make k8s-destroy` — delete all resources and the `withme` namespace.
+- `make kind-down` — delete the local kind cluster (if used).
+
 Next Owners Quickstart
 - Dev server: `uvicorn api.main:app --reload`.
 - Tests: `pytest -q`; Lint/format: `ruff check .`, `black .`.
