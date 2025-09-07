@@ -5,11 +5,9 @@ Overview
 
 Images
 - Build:
+  - `make docker-build` (or build individually):
   - API: `docker build -f api/Dockerfile -t ghcr.io/<org-or-user>/withme-api:0.1.0 .`
   - Worker: `docker build -f worker/Dockerfile -t ghcr.io/<org-or-user>/withme-worker:0.1.0 .`
-- Push (after `docker login ghcr.io`):
-  - `docker push ghcr.io/<org-or-user>/withme-api:0.1.0`
-  - `docker push ghcr.io/<org-or-user>/withme-worker:0.1.0`
 
 Cluster Setup
 - Namespace: `kubectl create namespace withme` (optional, update manifests if omitted).
@@ -17,12 +15,13 @@ Cluster Setup
   - From `.env`: `kubectl -n withme create secret generic withme-secrets --from-env-file=.env`
   - Or edit/apply: `infra/k8s/secrets-template.yaml` with base64 values.
 
-Apply Manifests
+Apply Manifests (Supabase DB)
 - `kubectl -n withme apply -f infra/k8s/redis.yaml`
 - `kubectl -n withme apply -f infra/k8s/api-deployment.yaml`
 - `kubectl -n withme apply -f infra/k8s/worker-deployment.yaml`
 - `kubectl -n withme apply -f infra/k8s/cronjobs.yaml` (optional)
 - `kubectl -n withme apply -f infra/k8s/ingress.yaml` (optional)
+Note: Use Supabase as Postgres. Ensure `DATABASE_URL` is set in secret `withme-secrets`. The `postgres.yaml` is an example only and not required for managed DB.
 
 Migrations
 - `infra/k8s/migrate-job.yaml` runs Alembic. Ensure the job image matches the API image that contains the code and Alembic config.
@@ -36,4 +35,3 @@ Notes
 - Health/readiness: `/health` on port 8080.
 - Cron security token: ensure `CRON_TOKEN` in `withme-secrets`.
 - Do not commit secrets; use secrets templates and secure channels.
-

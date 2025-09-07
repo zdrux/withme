@@ -15,17 +15,13 @@ Build Artifacts
 - Dockerfiles: `api/Dockerfile`, `worker/Dockerfile`.
 - Python deps: `requirements.txt`. Local tooling via `Makefile` and `.venv` recommended.
 
-Container Build & Push
-- Login (GHCR example):
-  - `echo $GHCR_TOKEN | docker login ghcr.io -u $GITHUB_USER --password-stdin`
-- Build tags:
-  - API: `docker build -f api/Dockerfile -t ghcr.io/<org-or-user>/withme-api:0.1.0 .`
-  - Worker: `docker build -f worker/Dockerfile -t ghcr.io/<org-or-user>/withme-worker:0.1.0 .`
-- Push:
-  - `docker push ghcr.io/<org-or-user>/withme-api:0.1.0`
-  - `docker push ghcr.io/<org-or-user>/withme-worker:0.1.0`
+Container Build
+- Use Makefile targets or raw docker commands:
+  - `make docker-build` (builds both API and Worker)
+  - API only: `docker build -f api/Dockerfile -t ghcr.io/<org-or-user>/withme-api:0.1.0 .`
+  - Worker only: `docker build -f worker/Dockerfile -t ghcr.io/<org-or-user>/withme-worker:0.1.0 .`
 
-Kubernetes Deployment
+Kubernetes Deployment (Supabase DB)
 - Manifests under `infra/k8s/`:
   - `api-deployment.yaml`, `worker-deployment.yaml`, `redis.yaml`, `ingress.yaml` (optional), `cronjobs.yaml`, `migrate-job.yaml`, `postgres.yaml` (example), `secrets-template.yaml`.
 - Namespace (optional): `kubectl create namespace withme`
@@ -38,6 +34,8 @@ Kubernetes Deployment
   - `kubectl -n withme apply -f infra/k8s/worker-deployment.yaml`
   - Optional ingress: `kubectl -n withme apply -f infra/k8s/ingress.yaml`
   - CronJobs: `kubectl -n withme apply -f infra/k8s/cronjobs.yaml`
+- Database:
+  - Use Supabase managed Postgres. Ensure `DATABASE_URL` in `withme-secrets` points to Supabase.
 - DB migrations:
   - Edit `infra/k8s/migrate-job.yaml` image to match your built API image if needed, then: `kubectl -n withme apply -f infra/k8s/migrate-job.yaml`
 
@@ -51,8 +49,8 @@ Operational Notes
 - Observability: use structured logs with request IDs; avoid logging PII; rate limits should be configured in API.
 
 Security & Secrets
-- Do NOT commit `.env` or raw API keys. Use Kubernetes Secrets or a secret manager. An example `secrets-template.yaml` is included.
-- For handoff, provide encrypted delivery of actual secrets (out-of-band).
+- Prefer not to commit `.env` or raw API keys. Use Kubernetes Secrets or a secret manager. An example `secrets-template.yaml` is included.
+- If secrets must be stored in Git, use encryption tooling (SOPS, git-crypt) and keep the repo private.
 
 Decommission Checklist
 - Disable cronjobs: `kubectl -n withme delete cronjob/daily-event cronjob/semantic-refresh`.
@@ -67,4 +65,3 @@ Next Owners Quickstart
 
 Contact & Handoff
 - See `docs/INSTRUCTIONS.MD` for the full PRD, API outline, and deployment details.
-
